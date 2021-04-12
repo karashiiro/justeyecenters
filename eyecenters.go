@@ -40,13 +40,15 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 	sobelized := effect.Sobel(resized)
 	sobelizedMat := imageGray2Mat(sobelized, sizeX, sizeY)
 
-	results := objective(sobelizedMat, sizeX, sizeY)
+	resizedMat := imageGray2Mat(resized, sizeX, sizeY)
+
+	results := objective(resizedMat, sobelizedMat, sizeX, sizeY)
 
 	finalX, finalY := argmax2D(results)
 
 	return &image.Point{
-		X: maxBounds.X / (sizeX / finalX),
-		Y: maxBounds.Y / (sizeY / finalY),
+		X: finalX * (maxBounds.X / sizeX),
+		Y: finalY * (maxBounds.Y / sizeY),
 	}, nil
 }
 
@@ -70,7 +72,7 @@ func argmax2D(m mat.Matrix) (int, int) {
 	return lastMaxX, lastMaxY
 }
 
-func objective(gradient mat.Matrix, sizeX, sizeY int) mat.Matrix {
+func objective(gray, gradient mat.Matrix, sizeX, sizeY int) mat.Matrix {
 	results := mat.NewDense(sizeY, sizeX, nil)
 	totalElements := float64(sizeX * sizeY)
 	for y := 0; y < sizeY; y++ {
@@ -80,8 +82,12 @@ func objective(gradient mat.Matrix, sizeX, sizeY int) mat.Matrix {
 			for cY := 0; cY < sizeY; cY++ {
 				for cX := 0; cX < sizeX; cX++ {
 					nextGrad := gradient.At(cX, cY)
+					if nextGrad == 0 {
+						continue
+					}
+
 					prod := dX.At(cX, cY)*nextGrad + dY.At(cX, cY)*nextGrad
-					nextValue += prod * prod
+					nextValue += prod * prod * (65535 - gray.At(x, y))
 				}
 			}
 			results.Set(x, y, nextValue/totalElements)
@@ -106,6 +112,10 @@ func makeDisplacementMats(fromX, fromY, sizeX, sizeY int) (mat.Matrix, mat.Matri
 	outputY := mat.NewDense(sizeY, sizeX, nil)
 	for y := 0; y < sizeY; y++ {
 		for x := 0; x < sizeX; x++ {
+			if x == fromX || y == fromY {
+				continue
+			}
+
 			dX := float64(x - fromX)
 			dY := float64(y - fromY)
 			mag := math.Sqrt(dX*dX + dY*dY)
