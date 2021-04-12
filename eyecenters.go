@@ -87,7 +87,7 @@ func objective(gray, gradient mat.Matrix, sizeX, sizeY int) mat.Matrix {
 					}
 
 					prod := dX.At(cX, cY)*nextGrad + dY.At(cX, cY)*nextGrad
-					nextValue += prod * prod * (65535 - gray.At(x, y))
+					nextValue += prod * prod * (255 - gray.At(x, y))
 				}
 			}
 			results.Set(x, y, nextValue/totalElements)
@@ -101,7 +101,7 @@ func imageGray2Mat(img image.Image, sizeX, sizeY int) mat.Matrix {
 	for y := 0; y < sizeY; y++ {
 		for x := 0; x < sizeX; x++ {
 			val, _, _, _ := img.At(x, y).RGBA()
-			output.Set(x, y, float64(val))
+			output.Set(x, y, float64(val>>8))
 		}
 	}
 	return output
