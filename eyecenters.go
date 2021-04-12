@@ -4,7 +4,6 @@ import (
 	"image"
 	"math"
 
-	"github.com/anthonynsimon/bild/effect"
 	"github.com/bamiaux/rez"
 	"gonum.org/v1/gonum/mat"
 )
@@ -37,12 +36,20 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 		return nil, err
 	}
 
-	sobelized := effect.Sobel(resized)
-	sobelizedMat := imageGray2Mat(sobelized, sizeX, sizeY)
-
 	resizedMat := imageGray2Mat(resized, sizeX, sizeY)
 
-	results := objective(resizedMat, sobelizedMat, sobelizedMat, sizeX, sizeY)
+	sobelX := convolve(resizedMat, [][]float64{
+		{-1, 0, 1},
+		{-2, 0, 2},
+		{-1, 0, 1},
+	})
+	sobelY := convolve(resizedMat, [][]float64{
+		{-1, -2, -1},
+		{0, 0, 0},
+		{1, 2, 1},
+	})
+
+	results := objective(resizedMat, sobelX, sobelY, sizeX, sizeY)
 
 	finalX, finalY := argmax2D(results)
 
@@ -88,7 +95,9 @@ func objective(gray, gradX, gradY mat.Matrix, sizeX, sizeY int) mat.Matrix {
 						continue
 					}
 
-					prod := dX.At(cX, cY)*nextGradX + dY.At(cX, cY)*nextGradY
+					mag := math.Sqrt(nextGradX*nextGradX + nextGradY*nextGradY)
+
+					prod := dX.At(cX, cY)*(nextGradX/mag) + dY.At(cX, cY)*(nextGradY/mag)
 					nextValue += prod * prod * weight
 				}
 			}
@@ -96,6 +105,25 @@ func objective(gray, gradX, gradY mat.Matrix, sizeX, sizeY int) mat.Matrix {
 		}
 	}
 	return results
+}
+
+func convolve(inMat mat.Matrix, kernel [][]float64) mat.Matrix {
+	rows, cols := inMat.Dims()
+	kernelRows := len(kernel)
+	kernelCols := len(kernel[0])
+	output := mat.NewDense(rows, cols, nil)
+	for y := 1; y < rows-1; y++ {
+		for x := 1; x < rows-1; x++ {
+			convResult := float64(0)
+			for kY := -1; kY < kernelRows-1; kY++ {
+				for kX := -1; kX < kernelCols-1; kX++ {
+					convResult += inMat.At(x+kX, y+kY) * kernel[kX+1][kY+1]
+				}
+			}
+			output.Set(x, y, convResult)
+		}
+	}
+	return output
 }
 
 func imageGray2Mat(img image.Image, sizeX, sizeY int) mat.Matrix {
