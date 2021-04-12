@@ -9,7 +9,7 @@ import (
 
 var resizer rez.Converter
 
-func GetEyeCenter(img image.Image) (image.Image, error) {
+func GetEyeCenter(img image.Image) (*image.Point, error) {
 	maxBounds := img.Bounds().Max
 	gray := image.NewGray(img.Bounds())
 	for x := 0; x < maxBounds.X; x++ {
@@ -31,9 +31,12 @@ func GetEyeCenter(img image.Image) (image.Image, error) {
 		return nil, err
 	}
 
-	sobelized := effect.Sobel(resized)
+	_ = effect.Sobel(resized)
 
-	return sobelized, nil
+	return &image.Point{
+		X: maxBounds.X / 2,
+		Y: maxBounds.Y / 2,
+	}, nil
 }
 
 func initResizer(output, input image.Image) error {
