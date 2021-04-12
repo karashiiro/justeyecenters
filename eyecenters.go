@@ -3,13 +3,14 @@ package justeyecenters
 import (
 	"image"
 
+	"github.com/anthonynsimon/bild/effect"
 	"github.com/bamiaux/rez"
 )
 
-var resizer *rez.Converter
+var resizer rez.Converter
 
-func GetEyeCenter(img image.Image) (*image.Point, error) {
-	resized := image.NewGray(image.Rect(0, 0, 64, 64))
+func GetEyeCenter(img image.Image) (image.Image, error) {
+	resized := image.NewRGBA(image.Rect(0, 0, 64, 64))
 	if resizer == nil {
 		err := initResizer(resized, img)
 		if err != nil {
@@ -17,7 +18,14 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 		}
 	}
 
-	return nil, nil
+	err := resizer.Convert(resized, img)
+	if err != nil {
+		return nil, err
+	}
+
+	sobelized := effect.Sobel(resized)
+
+	return sobelized, nil
 }
 
 func initResizer(output, input image.Image) error {
@@ -26,12 +34,10 @@ func initResizer(output, input image.Image) error {
 		return err
 	}
 
-	cvt, err := rez.NewConverter(cfg, rez.NewBilinearFilter())
+	resizer, err = rez.NewConverter(cfg, rez.NewBilinearFilter())
 	if err != nil {
 		return err
 	}
-
-	resizer = &cvt
 
 	return nil
 }
