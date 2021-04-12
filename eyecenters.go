@@ -10,15 +10,23 @@ import (
 var resizer rez.Converter
 
 func GetEyeCenter(img image.Image) (image.Image, error) {
-	resized := image.NewRGBA(image.Rect(0, 0, 64, 64))
+	maxBounds := img.Bounds().Max
+	gray := image.NewGray(img.Bounds())
+	for x := 0; x < maxBounds.X; x++ {
+		for y := 0; y < maxBounds.Y; y++ {
+			gray.Set(x, y, img.At(x, y))
+		}
+	}
+
+	resized := image.NewGray(image.Rect(0, 0, 64, 64))
 	if resizer == nil {
-		err := initResizer(resized, img)
+		err := initResizer(resized, gray)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	err := resizer.Convert(resized, img)
+	err := resizer.Convert(resized, gray)
 	if err != nil {
 		return nil, err
 	}
