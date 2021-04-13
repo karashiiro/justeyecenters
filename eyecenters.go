@@ -28,7 +28,7 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 		}
 	}
 
-	resized := image.NewGray(image.Rect(0, 0, 64, 64))
+	resized := image.NewGray(image.Rect(0, 0, 32, 32))
 	if resizer == nil {
 		err := initResizer(resized, gray)
 		if err != nil {
