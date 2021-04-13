@@ -10,4 +10,4 @@ Implemented based on `Timm, F. and Barth, E. (2011). "Accurate eye centre locali
 
 Input|Predicted output
 ---|---
-![Eye input](example/eyes/0.jpg)|![Eye with dot drawn over](example/results/9.jpg)
+![Eye input](example/eyes/0.jpg)|![Eye with dot drawn over](example/results/0.jpg)
