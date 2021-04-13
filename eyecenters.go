@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/bamiaux/rez"
+	"github.com/disintegration/gift"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -42,14 +43,19 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 		{-1, 0, 1},
 		{-2, 0, 2},
 		{-1, 0, 1},
-	})
+	}, float64(255)*0.9)
 	sobelY := convolve(resizedMat, [][]float64{
 		{-1, -2, -1},
 		{0, 0, 0},
 		{1, 2, 1},
-	})
+	}, float64(255)*0.9)
 
-	results := objective(resizedMat, sobelX, sobelY, sizeX, sizeY)
+	g := gift.New(gift.GaussianBlur(5))
+	gaussed := image.NewGray(resized.Bounds())
+	g.Draw(gaussed, resized)
+	gaussedMat := imageGray2Mat(gaussed, sizeX, sizeY)
+
+	results := objective(gaussedMat, sobelX, sobelY, sizeX, sizeY)
 
 	finalX, finalY := argmax2D(results)
 
@@ -107,7 +113,7 @@ func objective(gray, gradX, gradY mat.Matrix, sizeX, sizeY int) mat.Matrix {
 	return results
 }
 
-func convolve(inMat mat.Matrix, kernel [][]float64) mat.Matrix {
+func convolve(inMat mat.Matrix, kernel [][]float64, threshold float64) mat.Matrix {
 	rows, cols := inMat.Dims()
 	kernelRows := len(kernel)
 	kernelCols := len(kernel[0])
@@ -120,6 +126,11 @@ func convolve(inMat mat.Matrix, kernel [][]float64) mat.Matrix {
 					convResult += inMat.At(x+kX, y+kY) * kernel[kX+1][kY+1]
 				}
 			}
+
+			if math.Abs(convResult) < threshold {
+				continue
+			}
+
 			output.Set(x, y, convResult)
 		}
 	}
