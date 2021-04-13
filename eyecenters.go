@@ -12,6 +12,18 @@ import (
 var resizer rez.Converter
 var gausser = gift.New(gift.GaussianBlur(3.5))
 
+var sobelXKernel = [][]float64{
+	{-1, 0, 1},
+	{-2, 0, 2},
+	{-1, 0, 1},
+}
+
+var sobelYKernel = [][]float64{
+	{-1, -2, -1},
+	{0, 0, 0},
+	{1, 2, 1},
+}
+
 // GetEyeCenter predicts an eye center location based on a cropped input
 // image. The input image should be cropped to just fit the eye; significant
 // deviations from these bounds will reduce the accuracy of the predictor
@@ -47,16 +59,8 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 
 	resizedMat := imageGray2Mat(resized, sizeX, sizeY)
 
-	sobelX := convolve(resizedMat, [][]float64{
-		{-1, 0, 1},
-		{-2, 0, 2},
-		{-1, 0, 1},
-	}, float64(255)*0.9)
-	sobelY := convolve(resizedMat, [][]float64{
-		{-1, -2, -1},
-		{0, 0, 0},
-		{1, 2, 1},
-	}, float64(255)*0.9)
+	sobelX := convolve(resizedMat, sobelXKernel, float64(255)*0.9)
+	sobelY := convolve(resizedMat, sobelYKernel, float64(255)*0.9)
 
 	gaussed := image.NewGray(resized.Bounds())
 	gausser.Draw(gaussed, resized)
