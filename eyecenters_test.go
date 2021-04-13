@@ -25,7 +25,7 @@ func TestGetEyeCenter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := image.Rect(98, 54, 121, 77)
+	expected := image.Rect(95, 37, 121, 62)
 	if !prediction.In(expected) {
 		t.Fatalf("predicted center not in expected bounds. prediction: %v; bounds: %v", prediction, expected)
 	}
