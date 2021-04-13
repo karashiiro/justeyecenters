@@ -18,7 +18,7 @@ var gausser = gift.New(gift.GaussianBlur(3.5))
 // dramatically.
 //
 // Implemented based on Timm, F. and Barth, E. (2011). "Accurate eye centre
-// localisation by means of gradients"
+// localisation by means of gradients".
 func GetEyeCenter(img image.Image) (*image.Point, error) {
 	maxBounds := img.Bounds().Max
 	gray := image.NewGray(img.Bounds())
