@@ -1,12 +1,8 @@
 package justeyecenters
 
 import (
-	"bytes"
 	"image"
-	"image/color"
-	"image/jpeg"
 	"math"
-	"os"
 
 	"github.com/bamiaux/rez"
 	"github.com/disintegration/gift"
@@ -61,42 +57,12 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 
 	results := objective(gaussedMat, sobelX, sobelY, sizeX, sizeY)
 
-	resultImg := mat2Image(results)
-	var outBuf bytes.Buffer
-	err = jpeg.Encode(&outBuf, resultImg, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	err = os.WriteFile("heatmap.jpg", outBuf.Bytes(), 0644)
-	if err != nil {
-		return nil, err
-	}
-
 	finalX, finalY := argmax2D(results)
 
 	return &image.Point{
 		X: finalX * (maxBounds.X / sizeX),
 		Y: finalY * (maxBounds.Y / sizeY),
 	}, nil
-}
-
-func mat2Image(m mat.Matrix) image.Image {
-	sizeY, sizeX := m.Dims()
-	img := image.NewGray(image.Rect(0, 0, sizeX, sizeY))
-
-	maxX, maxY := argmax2D(m)
-	maxValue := m.At(maxX, maxY)
-
-	for y := 0; y < sizeY; y++ {
-		for x := 0; x < sizeX; x++ {
-			nextValue := m.At(x, y)
-			nextValue *= 255 / maxValue
-			img.Set(x, y, color.Gray{Y: uint8(nextValue)})
-		}
-	}
-
-	return img
 }
 
 func argmax2D(m mat.Matrix) (int, int) {
