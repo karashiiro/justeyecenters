@@ -12,6 +12,13 @@ import (
 var resizer rez.Converter
 var gausser = gift.New(gift.GaussianBlur(3.5))
 
+// GetEyeCenter predicts an eye center location based on a cropped input
+// image. The input image should be cropped to just fit the eye; significant
+// deviations from these bounds will reduce the accuracy of the predictor
+// dramatically.
+//
+// Implemented based on Timm, F. and Barth, E. (2011). "Accurate eye centre
+// localisation by means of gradients"
 func GetEyeCenter(img image.Image) (*image.Point, error) {
 	maxBounds := img.Bounds().Max
 	gray := image.NewGray(img.Bounds())
