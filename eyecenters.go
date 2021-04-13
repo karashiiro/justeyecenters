@@ -1,8 +1,12 @@
 package justeyecenters
 
 import (
+	"bytes"
 	"image"
+	"image/color"
+	"image/jpeg"
 	"math"
+	"os"
 
 	"github.com/bamiaux/rez"
 	"github.com/disintegration/gift"
@@ -10,6 +14,7 @@ import (
 )
 
 var resizer rez.Converter
+var gausser = gift.New(gift.GaussianBlur(3.5))
 
 func GetEyeCenter(img image.Image) (*image.Point, error) {
 	maxBounds := img.Bounds().Max
@@ -50,12 +55,23 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 		{1, 2, 1},
 	}, float64(255)*0.9)
 
-	g := gift.New(gift.GaussianBlur(5))
 	gaussed := image.NewGray(resized.Bounds())
-	g.Draw(gaussed, resized)
+	gausser.Draw(gaussed, resized)
 	gaussedMat := imageGray2Mat(gaussed, sizeX, sizeY)
 
 	results := objective(gaussedMat, sobelX, sobelY, sizeX, sizeY)
+
+	resultImg := mat2Image(results)
+	var outBuf bytes.Buffer
+	err = jpeg.Encode(&outBuf, resultImg, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = os.WriteFile("heatmap.jpg", outBuf.Bytes(), 0644)
+	if err != nil {
+		return nil, err
+	}
 
 	finalX, finalY := argmax2D(results)
 
@@ -63,6 +79,24 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 		X: finalX * (maxBounds.X / sizeX),
 		Y: finalY * (maxBounds.Y / sizeY),
 	}, nil
+}
+
+func mat2Image(m mat.Matrix) image.Image {
+	sizeY, sizeX := m.Dims()
+	img := image.NewGray(image.Rect(0, 0, sizeX, sizeY))
+
+	maxX, maxY := argmax2D(m)
+	maxValue := m.At(maxX, maxY)
+
+	for y := 0; y < sizeY; y++ {
+		for x := 0; x < sizeX; x++ {
+			nextValue := m.At(x, y)
+			nextValue *= 255 / maxValue
+			img.Set(x, y, color.Gray{Y: uint8(nextValue)})
+		}
+	}
+
+	return img
 }
 
 func argmax2D(m mat.Matrix) (int, int) {
@@ -88,26 +122,26 @@ func argmax2D(m mat.Matrix) (int, int) {
 func objective(gray, gradX, gradY mat.Matrix, sizeX, sizeY int) mat.Matrix {
 	results := mat.NewDense(sizeY, sizeX, nil)
 	totalElements := float64(sizeX * sizeY)
-	for y := 0; y < sizeY; y++ {
-		for x := 0; x < sizeX; x++ {
-			dX, dY := makeUnitDisplacementMats(x, y, sizeX, sizeY)
+	for cY := 0; cY < sizeY; cY++ {
+		for cX := 0; cX < sizeX; cX++ {
+			dX, dY := makeUnitDisplacementMats(cX, cY, sizeX, sizeY)
 			nextValue := float64(0)
-			weight := 255 - gray.At(x, y)
-			for cY := 0; cY < sizeY; cY++ {
-				for cX := 0; cX < sizeX; cX++ {
-					nextGradX := gradX.At(cX, cY)
-					nextGradY := gradY.At(cX, cY)
+			weight := 255 - gray.At(cX, cY)
+			for y := 0; y < sizeY; y++ {
+				for x := 0; x < sizeX; x++ {
+					nextGradX := gradX.At(x, y)
+					nextGradY := gradY.At(x, y)
 					if nextGradX == 0 && nextGradY == 0 {
 						continue
 					}
 
 					mag := math.Sqrt(nextGradX*nextGradX + nextGradY*nextGradY)
 
-					prod := dX.At(cX, cY)*(nextGradX/mag) + dY.At(cX, cY)*(nextGradY/mag)
+					prod := dX.At(x, y)*(nextGradY/mag) + dY.At(x, y)*(nextGradX/mag)
 					nextValue += prod * prod * weight
 				}
 			}
-			results.Set(x, y, nextValue/totalElements)
+			results.Set(cX, cY, nextValue/totalElements)
 		}
 	}
 	return results
