@@ -2,7 +2,7 @@
 [![Documentation Badge](https://img.shields.io/badge/docs-pkg.go.dev-007D9C)](https://pkg.go.dev/github.com/karashiiro/justeyecenters)
 [![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/karashiiro/justeyecenters)](https://libraries.io/github/karashiiro/justeyecenters)
 
-Just does eye centers.
+Real-time detection of eye centers from a cropped image.
 
 Implemented based on `Timm, F. and Barth, E. (2011). "Accurate eye centre localisation by means of gradients"`.
 
