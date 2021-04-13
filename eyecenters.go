@@ -95,9 +95,15 @@ func argmax2D(m mat.Matrix) (int, int) {
 func objective(gray, gradX, gradY mat.Matrix, sizeX, sizeY int) mat.Matrix {
 	results := mat.NewDense(sizeY, sizeX, nil)
 	totalElements := float64(sizeX * sizeY)
+
+	// Preallocate displacement matrices since their values aren't reused
+	// between loop iterations
+	dX := mat.NewDense(sizeY, sizeX, nil)
+	dY := mat.NewDense(sizeY, sizeX, nil)
+
 	for cY := 0; cY < sizeY; cY++ {
 		for cX := 0; cX < sizeX; cX++ {
-			dX, dY := makeUnitDisplacementMats(cX, cY, sizeX, sizeY)
+			makeUnitDisplacementMats(dX, dY, cX, cY, sizeX, sizeY)
 			nextValue := float64(0)
 			weight := 255 - gray.At(cX, cY)
 			for y := 0; y < sizeY; y++ {
@@ -117,6 +123,7 @@ func objective(gray, gradX, gradY mat.Matrix, sizeX, sizeY int) mat.Matrix {
 			results.Set(cX, cY, nextValue/totalElements)
 		}
 	}
+
 	return results
 }
 
@@ -155,23 +162,22 @@ func imageGray2Mat(img image.Image, sizeX, sizeY int) mat.Matrix {
 	return output
 }
 
-func makeUnitDisplacementMats(fromX, fromY, sizeX, sizeY int) (mat.Matrix, mat.Matrix) {
-	outputX := mat.NewDense(sizeY, sizeX, nil)
-	outputY := mat.NewDense(sizeY, sizeX, nil)
+func makeUnitDisplacementMats(mX, mY *mat.Dense, fromX, fromY, sizeX, sizeY int) {
 	for y := 0; y < sizeY; y++ {
 		for x := 0; x < sizeX; x++ {
 			if x == fromX || y == fromY {
+				mX.Set(x, y, 0)
+				mY.Set(x, y, 0)
 				continue
 			}
 
 			dX := float64(x - fromX)
 			dY := float64(y - fromY)
 			mag := math.Sqrt(dX*dX + dY*dY)
-			outputX.Set(x, y, dX/mag)
-			outputY.Set(x, y, dY/mag)
+			mX.Set(x, y, dX/mag)
+			mY.Set(x, y, dY/mag)
 		}
 	}
-	return outputX, outputY
 }
 
 func initResizer(output, input image.Image) error {
