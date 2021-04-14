@@ -33,6 +33,8 @@ var sobelYKernel = [][]float64{
 // localisation by means of gradients".
 func GetEyeCenter(img image.Image) (*image.Point, error) {
 	maxBounds := img.Bounds().Max
+
+	// Convert to grayscale
 	gray := image.NewGray(img.Bounds())
 	for x := 0; x < maxBounds.X; x++ {
 		for y := 0; y < maxBounds.Y; y++ {
@@ -40,6 +42,7 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 		}
 	}
 
+	// Downscale the image to 32x32
 	resized := image.NewGray(image.Rect(0, 0, 32, 32))
 	if resizer == nil {
 		err := initResizer(resized, gray)
@@ -57,17 +60,20 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 		return nil, err
 	}
 
-	resizedMat := imageGray2Mat(resized, sizeX, sizeY)
-
-	sobelX := convolve(resizedMat, sobelXKernel, float64(255)*0.9)
-	sobelY := convolve(resizedMat, sobelYKernel, float64(255)*0.9)
-
+	// Blur the downscaled image
 	gaussed := image.NewGray(resized.Bounds())
 	gausser.Draw(gaussed, resized)
 	gaussedMat := imageGray2Mat(gaussed, sizeX, sizeY)
 
+	// Generate the image gradient
+	resizedMat := imageGray2Mat(resized, sizeX, sizeY)
+	sobelX := convolve(resizedMat, sobelXKernel, float64(255)*0.9)
+	sobelY := convolve(resizedMat, sobelYKernel, float64(255)*0.9)
+
+	// Run the objective function
 	results := objective(gaussedMat, sobelX, sobelY, sizeX, sizeY)
 
+	// Get final center estimate
 	finalX, finalY := argmax2D(results)
 
 	return &image.Point{
