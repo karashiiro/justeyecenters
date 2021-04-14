@@ -82,26 +82,6 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 	}, nil
 }
 
-func argmax2D(m mat.Matrix) (int, int) {
-	sizeY, sizeX := m.Dims()
-	lastMax := float64(0)
-	lastMaxX := 0
-	lastMaxY := 0
-
-	for y := 0; y < sizeY; y++ {
-		for x := 0; x < sizeX; x++ {
-			nextValue := m.At(x, y)
-			if nextValue >= lastMax {
-				lastMax = nextValue
-				lastMaxX = x
-				lastMaxY = y
-			}
-		}
-	}
-
-	return lastMaxX, lastMaxY
-}
-
 func objective(gray, gradX, gradY mat.Matrix, sizeX, sizeY int) mat.Matrix {
 	results := mat.NewDense(sizeY, sizeX, nil)
 	totalElements := float64(sizeX * sizeY)
@@ -135,6 +115,26 @@ func objective(gray, gradX, gradY mat.Matrix, sizeX, sizeY int) mat.Matrix {
 	}
 
 	return results
+}
+
+func argmax2D(m mat.Matrix) (int, int) {
+	sizeY, sizeX := m.Dims()
+	lastMax := float64(0)
+	lastMaxX := 0
+	lastMaxY := 0
+
+	for y := 0; y < sizeY; y++ {
+		for x := 0; x < sizeX; x++ {
+			nextValue := m.At(x, y)
+			if nextValue >= lastMax {
+				lastMax = nextValue
+				lastMaxX = x
+				lastMaxY = y
+			}
+		}
+	}
+
+	return lastMaxX, lastMaxY
 }
 
 func convolve(inMat mat.Matrix, kernel [][]float64, threshold float64) mat.Matrix {
