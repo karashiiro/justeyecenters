@@ -77,8 +77,8 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 	finalX, finalY := argmax2D(results)
 
 	return &image.Point{
-		X: finalX * (maxBounds.X / sizeX),
-		Y: finalY * (maxBounds.Y / sizeY),
+		X: rescale(finalX, sizeX, maxBounds.X),
+		Y: rescale(finalY, sizeY, maxBounds.Y),
 	}, nil
 }
 
@@ -115,6 +115,10 @@ func objective(gray, gradX, gradY mat.Matrix, sizeX, sizeY int) mat.Matrix {
 	}
 
 	return results
+}
+
+func rescale(a, oldMax, newMax int) int {
+	return a * (newMax / oldMax)
 }
 
 func argmax2D(m mat.Matrix) (int, int) {
