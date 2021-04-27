@@ -9,7 +9,6 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-var resizer rez.Converter
 var gausser = gift.New(gift.GaussianBlur(3.5))
 
 var sobelXKernel = [][]float64{
@@ -44,21 +43,14 @@ func GetEyeCenter(img image.Image) (*image.Point, error) {
 
 	// Downscale the image to 32x32
 	resized := image.NewGray(image.Rect(0, 0, 32, 32))
-	if resizer == nil {
-		err := initResizer(resized, gray)
-		if err != nil {
-			return nil, err
-		}
+	err := rez.Convert(resized, gray, rez.NewBicubicFilter())
+	if err != nil {
+		return nil, err
 	}
 
 	resizedBounds := resized.Bounds().Max
 	sizeX := resizedBounds.X
 	sizeY := resizedBounds.Y
-
-	err := resizer.Convert(resized, gray)
-	if err != nil {
-		return nil, err
-	}
 
 	// Blur the downscaled image
 	gaussed := image.NewGray(resized.Bounds())
@@ -192,18 +184,4 @@ func makeUnitDisplacementMats(mX, mY *mat.Dense, fromX, fromY, sizeX, sizeY int)
 			mY.Set(x, y, dY/mag)
 		}
 	}
-}
-
-func initResizer(output, input image.Image) error {
-	cfg, err := rez.PrepareConversion(output, input)
-	if err != nil {
-		return err
-	}
-
-	resizer, err = rez.NewConverter(cfg, rez.NewBilinearFilter())
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
